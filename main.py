@@ -1,5 +1,10 @@
+from app import GradioInterface
+
+
 def main():
-    print("Hello from gemma3n-impact-hackathon!")
+    """Main function to launch the Application."""
+    interface = GradioInterface()
+    interface.page()
 
 
 if __name__ == "__main__":
