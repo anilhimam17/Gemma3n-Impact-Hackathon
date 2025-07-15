@@ -1,11 +1,12 @@
 import gradio as gr
+from gradio_pdf import PDF
 
 
 class GradioInterface:
     """Implements the complete interface for a page in Gradio."""
     def __init__(self):
         self.block_params = {"title": "Research Companion", "fill_height": True, "fill_width": True}
-        self.mark_style = 'background-color: #e1e9eb; padding: 0.2em 0.4em; border-radius: 5px;'
+        self.mark_style = 'background-color: #c9c8c7; padding: 0.2em 0.4em; border-radius: 5px;'
         self.desciption_style = 'text-align: center; line-height: 2.5; font-size: 16px;'
         self.top_description = f"""
         <div style="{self.desciption_style}">
@@ -26,8 +27,23 @@ class GradioInterface:
         with gr.Blocks(**self.block_params) as demo:
             gr.Markdown(value="<h1 style='text-align: center; font-size: 32px;'>Research Companion 🤖</h1>")
             gr.HTML(value=self.top_description)
+
+            # Splitting the page into two sections
+            with gr.Row():
+                with gr.Column(scale=1):
+                    PDF(label="Upload your PDF")
+                with gr.Column(scale=2):
+                    gr.ChatInterface(
+                        fn=self.run_query, type="messages",
+                        chatbot=gr.Chatbot(placeholder="Let's begin the Research"),
+                        # additional_inputs=[gr.Audio(label="Voice Input", sources="microphone", type="numpy")]
+                    )
         
         # Rendering the page.
         demo.launch()
 
     # ==== Helper Functions ====
+    @staticmethod
+    def run_query(user_prompt: str, state: None = None) -> str:
+        """Propagates the given query through the AI agent."""
+        raise NotImplementedError
