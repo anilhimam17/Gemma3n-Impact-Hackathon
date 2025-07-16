@@ -7,4 +7,5 @@ requires-python = ">=3.9"
 dependencies = [
     "gradio>=4.44.1",
     "gradio-pdf>=0.0.22",
+    "numpy>=2.0.2",
 ]

@@ -1,1 +1,5 @@
-# Ignorining Legacy Files that arent needed to be tracked
+# Ignorining Legacy Files from Python
+__pycache__
+
+# Ignoring Legacy Files from Gradio
+.gradio
