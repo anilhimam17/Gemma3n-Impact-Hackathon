@@ -31,12 +31,12 @@ class GradioInterface:
             # Splitting the page into two sections
             with gr.Row():
                 with gr.Column(scale=1):
-                    PDF(label="Upload your PDF")
+                    pdf_comp = PDF(label="Upload your PDF")
                 with gr.Column(scale=2):
                     gr.ChatInterface(
                         fn=self.run_query, type="messages",
-                        chatbot=gr.Chatbot(placeholder="Let's begin the Research"),
-                        # additional_inputs=[gr.Audio(label="Voice Input", sources="microphone", type="numpy")]
+                        chatbot=gr.Chatbot(placeholder="Let's begin the Research", type="messages"),
+                        additional_inputs=[pdf_comp, gr.Audio(label="Voice Input", sources=["microphone"], type="numpy")]
                     )
         
         # Rendering the page.
@@ -44,6 +44,8 @@ class GradioInterface:
 
     # ==== Helper Functions ====
     @staticmethod
-    def run_query(user_prompt: str, state: None = None) -> str:
+    def run_query(message, pdf_input = None, audio = None, state: None = None) -> str:
         """Propagates the given query through the AI agent."""
-        raise NotImplementedError
+        last_message = message if message else ""
+        # audio_status = "Audio Recieved." if audio is not None else "No Audio."
+        return f"User Said: {last_message}"
