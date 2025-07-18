@@ -8,11 +8,14 @@ from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 from llama_index.core.query_engine import BaseQueryEngine
-from llama_index.core.base.response.schema import RESPONSE_TYPE
+from llama_index.core.base.response import schema
 from llama_index.core.response_synthesizers import ResponseMode
+
+from response_structures import ResearchResponse
 
 from pathlib import Path
 from typing import cast
+import json
 
 
 # Root Path
@@ -31,7 +34,8 @@ class QueryEngine:
 
     def __init__(self, filename: str = "YOLOv7.pdf", embed_model: str = EMBED_MODEL, llm: str = GEMMA3N) -> None:
         """Class Constructor."""
-        self.llm = llm
+        self.llm = Ollama(model=llm, request_timeout=60.0, context_window=2000)
+        self.structured_llm = self.llm.as_structured_llm(ResearchResponse)
 
         self.documents: list[Document] = []
         self.vector_store: VectorStoreIndex
@@ -62,13 +66,11 @@ class QueryEngine:
             self.vector_store = cast(VectorStoreIndex, intermediate_index)
 
         # Creating the Query Engine
-        custom_retriever = VectorIndexRetriever(self.vector_store, similarity_top_k=5)
-        custom_response_synthesiser = get_response_synthesizer(
-            llm=Ollama(self.llm, request_timeout=120.0, context_window=2000)
-        )
+        custom_retriever = VectorIndexRetriever(self.vector_store, similarity_top_k=3)
+        custom_response_synthesiser = get_response_synthesizer(self.structured_llm, response_mode=ResponseMode.COMPACT)
         custom_query_eng = RetrieverQueryEngine.from_args(
             retriever=custom_retriever, response_synthesizer=custom_response_synthesiser, 
-            response_mode=ResponseMode.TREE_SUMMARIZE, llm=Ollama(self.llm, request_timeout=120.0, context_window=2000)
+            response_mode=ResponseMode.COMPACT, llm=self.structured_llm
         )
         return custom_query_eng
     
@@ -76,12 +78,17 @@ class QueryEngine:
         """Starts the query engine."""
         self.query_engine = self.construct_query_engine()
     
-    def run_query(self, user_prompt: str) -> RESPONSE_TYPE:
+    def run_query(self, user_prompt: str) -> str:
         """Runs a user prompt for query on the Query Engine."""
         self.start_query_engine()
-        response = self.query_engine.query(user_prompt)
-        return response
+        response_obj = self.query_engine.query(user_prompt)
+        response_json = json.loads(str(response_obj))
+        research_response_output = ResearchResponse.model_validate(response_json)
+        return research_response_output.model_dump_json(indent=4)
 
 
 gemma_engine = QueryEngine()
-print(gemma_engine.run_query("Generate a simplified abstract for this paper with the main focus of Object Detection and its contributions to real-time Object Detection."))
+for i in range(3):
+    inp_prompt = input("Enter Query: ")
+    response = gemma_engine.run_query(inp_prompt)
+    print(response)
