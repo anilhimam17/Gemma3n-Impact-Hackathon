@@ -12,6 +12,7 @@ dependencies = [
     "llama-index-llms-ollama>=0.6.2",
     "numpy>=2.0.2",
     "pillow>=10.4.0",
+    "pydantic>=2.11.7",
     "sentence-transformers>=5.0.0",
     "transformers>=4.53.2",
 ]

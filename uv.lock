@@ -870,6 +870,7 @@ dependencies = [
     { name = "numpy", version = "2.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pydantic" },
     { name = "sentence-transformers" },
     { name = "transformers" },
 ]
@@ -883,6 +884,7 @@ requires-dist = [
     { name = "llama-index-llms-ollama", specifier = ">=0.6.2" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pillow", specifier = ">=10.4.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "sentence-transformers", specifier = ">=5.0.0" },
     { name = "transformers", specifier = ">=4.53.2" },
 ]
