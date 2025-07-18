@@ -9,6 +9,8 @@ dependencies = [
     "gradio-pdf>=0.0.22",
     "llama-index>=0.12.49",
     "llama-index-embeddings-huggingface>=0.5.5",
+    "llama-index-llms-ollama>=0.6.2",
     "numpy>=2.0.2",
+    "pillow>=10.4.0",
     "transformers>=4.53.2",
 ]
