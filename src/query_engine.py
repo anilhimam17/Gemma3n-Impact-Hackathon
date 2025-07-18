@@ -1,12 +1,18 @@
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Document, StorageContext, load_index_from_storage
+from llama_index.core import (
+    SimpleDirectoryReader, VectorStoreIndex, Document, StorageContext, 
+    load_index_from_storage, get_response_synthesizer
+)
+from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-from llama_index.core.indices.base import BaseIndex
 from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.base.response.schema import RESPONSE_TYPE
+from llama_index.core.response_synthesizers import ResponseMode
 
 from pathlib import Path
+from typing import cast
 
 
 # Root Path
@@ -28,7 +34,7 @@ class QueryEngine:
         self.llm = llm
 
         self.documents: list[Document] = []
-        self.vector_store: VectorStoreIndex | BaseIndex
+        self.vector_store: VectorStoreIndex
         self.embed_model = HuggingFaceEmbedding(model_name=embed_model) 
 
         self.file_name: Path = Path(filename)
@@ -52,11 +58,19 @@ class QueryEngine:
         else:
             # Loading the Indexes
             storage_context = StorageContext.from_defaults(persist_dir=str(self.index_registry / self.file_name.stem))
-            self.vector_store = load_index_from_storage(storage_context=storage_context, embed_model=self.embed_model)
+            intermediate_index = load_index_from_storage(storage_context=storage_context, embed_model=self.embed_model)
+            self.vector_store = cast(VectorStoreIndex, intermediate_index)
 
         # Creating the Query Engine
-        query_eng = self.vector_store.as_query_engine(llm=Ollama(self.llm))
-        return query_eng
+        custom_retriever = VectorIndexRetriever(self.vector_store, similarity_top_k=5)
+        custom_response_synthesiser = get_response_synthesizer(
+            llm=Ollama(self.llm, request_timeout=120.0, context_window=2000)
+        )
+        custom_query_eng = RetrieverQueryEngine.from_args(
+            retriever=custom_retriever, response_synthesizer=custom_response_synthesiser, 
+            response_mode=ResponseMode.TREE_SUMMARIZE, llm=Ollama(self.llm, request_timeout=120.0, context_window=2000)
+        )
+        return custom_query_eng
     
     def start_query_engine(self) -> None:
         """Starts the query engine."""
@@ -70,4 +84,4 @@ class QueryEngine:
 
 
 gemma_engine = QueryEngine()
-print(gemma_engine.run_query("Generate a simplified abstract for this paper."))
+print(gemma_engine.run_query("Generate a simplified abstract for this paper with the main focus of Object Detection and its contributions to real-time Object Detection."))
