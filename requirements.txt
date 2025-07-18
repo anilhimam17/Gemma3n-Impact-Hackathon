@@ -78,11 +78,11 @@ fsspec==2025.7.0
     #   huggingface-hub
     #   llama-index-core
     #   torch
-gradio==5.37.0
+gradio==5.38.0
     # via
     #   gemma3n-impact-hackathon (pyproject.toml)
     #   gradio-pdf
-gradio-client==1.10.4
+gradio-client==1.11.0
     # via gradio
 gradio-pdf==0.0.22
     # via gemma3n-impact-hackathon (pyproject.toml)
@@ -172,7 +172,7 @@ llama-index-embeddings-openai==0.3.1
     #   llama-index-cli
 llama-index-indices-managed-llama-cloud==0.7.10
     # via llama-index
-llama-index-instrumentation==0.2.0
+llama-index-instrumentation==0.3.0
     # via llama-index-workflows
 llama-index-llms-ollama==0.6.2
     # via gemma3n-impact-hackathon (pyproject.toml)
@@ -239,7 +239,7 @@ numpy==2.3.1
     #   transformers
 ollama==0.5.1
     # via llama-index-llms-ollama
-openai==1.96.1
+openai==1.97.0
     # via
     #   llama-index-agent-openai
     #   llama-index-embeddings-openai
@@ -259,6 +259,7 @@ pandas==2.3.1
     #   llama-index-readers-file
 pillow==11.3.0
     # via
+    #   gemma3n-impact-hackathon (pyproject.toml)
     #   gradio
     #   llama-index-core
     #   sentence-transformers
@@ -317,7 +318,7 @@ requests==2.32.4
     #   transformers
 rich==14.0.0
     # via typer
-ruff==0.12.3
+ruff==0.12.4
     # via gradio
 safehttpx==0.1.6
     # via gradio
@@ -332,7 +333,9 @@ scipy==1.16.0
 semantic-version==2.10.0
     # via gradio
 sentence-transformers==5.0.0
-    # via llama-index-embeddings-huggingface
+    # via
+    #   gemma3n-impact-hackathon (pyproject.toml)
+    #   llama-index-embeddings-huggingface
 setuptools==80.9.0
     # via
     #   llama-index-core
@@ -380,7 +383,9 @@ tqdm==4.67.1
     #   sentence-transformers
     #   transformers
 transformers==4.53.2
-    # via sentence-transformers
+    # via
+    #   gemma3n-impact-hackathon (pyproject.toml)
+    #   sentence-transformers
 typer==0.16.0
     # via gradio
 typing-extensions==4.14.1
