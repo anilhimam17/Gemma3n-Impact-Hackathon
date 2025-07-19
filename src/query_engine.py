@@ -8,10 +8,9 @@ from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 from llama_index.core.query_engine import BaseQueryEngine
-from llama_index.core.base.response import schema
 from llama_index.core.response_synthesizers import ResponseMode
 
-from response_structures import ResearchResponse
+from src.response_structures import ResearchResponse
 
 from pathlib import Path
 from typing import cast
@@ -38,7 +37,7 @@ class QueryEngine:
         self.structured_llm = self.llm.as_structured_llm(ResearchResponse)
 
         self.documents: list[Document] = []
-        self.vector_store: VectorStoreIndex
+        self.vector_store: VectorStoreIndex  # Current VectorStore only create Indexes using Text, need to extend to MultiModal => Todo.
         self.embed_model = HuggingFaceEmbedding(model_name=embed_model) 
 
         self.file_name: Path = Path(filename)
@@ -87,8 +86,8 @@ class QueryEngine:
         return research_response_output.model_dump_json(indent=4)
 
 
-gemma_engine = QueryEngine()
-for i in range(3):
-    inp_prompt = input("Enter Query: ")
-    response = gemma_engine.run_query(inp_prompt)
-    print(response)
+# gemma_engine = QueryEngine()
+# for i in range(3):
+#     inp_prompt = input("Enter Query: ")
+#     response = gemma_engine.run_query(inp_prompt)
+#     print(response)
