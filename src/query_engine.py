@@ -1,5 +1,5 @@
 from llama_index.core import (
-    SimpleDirectoryReader, VectorStoreIndex, Document, StorageContext, 
+    SimpleDirectoryReader, VectorStoreIndex, Document, StorageContext,
     load_index_from_storage, get_response_synthesizer
 )
 from llama_index.core.retrievers import VectorIndexRetriever
@@ -10,7 +10,8 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.response_synthesizers import ResponseMode
 
-from src.response_structures import ResearchResponse
+from response_structures import ResearchResponse
+from structured_prompt import CUSTOM_PROMPT_TEMPLATE
 
 from pathlib import Path
 from typing import cast
@@ -33,7 +34,7 @@ class QueryEngine:
 
     def __init__(self, filename: str = "YOLOv7.pdf", embed_model: str = EMBED_MODEL, llm: str = GEMMA3N) -> None:
         """Class Constructor."""
-        self.llm = Ollama(model=llm, request_timeout=60.0, context_window=2000)
+        self.llm = Ollama(model=llm, request_timeout=300.0, context_window=4000)
         self.structured_llm = self.llm.as_structured_llm(ResearchResponse)
 
         self.documents: list[Document] = []
@@ -44,6 +45,8 @@ class QueryEngine:
         self.file_registry: Path = ROOT / "assets"
         self.index_registry: Path = ROOT / "vector_store"
         self.file_path: Path = self.file_registry / filename
+
+        self.query_engine = self.construct_query_engine()
 
     def check_index_exists(self) -> bool:
         """Checks if the index for a given file already exists."""
@@ -64,30 +67,31 @@ class QueryEngine:
             intermediate_index = load_index_from_storage(storage_context=storage_context, embed_model=self.embed_model)
             self.vector_store = cast(VectorStoreIndex, intermediate_index)
 
-        # Creating the Query Engine
+        # Creating the Custom Index Retriever for the Store.
         custom_retriever = VectorIndexRetriever(self.vector_store, similarity_top_k=3)
-        custom_response_synthesiser = get_response_synthesizer(self.structured_llm, response_mode=ResponseMode.COMPACT)
+
+        # Creating the Custom Response Synthesiser with the Prompt template SLLM.
+        custom_response_synthesiser = get_response_synthesizer(
+            self.structured_llm, response_mode=ResponseMode.COMPACT, text_qa_template=CUSTOM_PROMPT_TEMPLATE
+        )
+
+        # Compiling and Constructing the Custom QueryEngine.
         custom_query_eng = RetrieverQueryEngine.from_args(
             retriever=custom_retriever, response_synthesizer=custom_response_synthesiser, 
             response_mode=ResponseMode.COMPACT, llm=self.structured_llm
         )
         return custom_query_eng
     
-    def start_query_engine(self) -> None:
-        """Starts the query engine."""
-        self.query_engine = self.construct_query_engine()
-    
     def run_query(self, user_prompt: str) -> str:
         """Runs a user prompt for query on the Query Engine."""
-        self.start_query_engine()
         response_obj = self.query_engine.query(user_prompt)
         response_json = json.loads(str(response_obj))
         research_response_output = ResearchResponse.model_validate(response_json)
         return research_response_output.model_dump_json(indent=4)
 
 
-# gemma_engine = QueryEngine()
-# for i in range(3):
-#     inp_prompt = input("Enter Query: ")
-#     response = gemma_engine.run_query(inp_prompt)
-#     print(response)
+gemma_engine = QueryEngine()
+for i in range(3):
+    inp_prompt = input("Enter Query: ")
+    response = gemma_engine.run_query(inp_prompt)
+    print(response)
