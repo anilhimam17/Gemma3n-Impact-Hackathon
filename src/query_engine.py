@@ -10,6 +10,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.core.response_synthesizers import ResponseMode
 
+from config import settings
 from response_structures import ResearchResponse
 from structured_prompt import CUSTOM_PROMPT_TEMPLATE
 
@@ -18,32 +19,24 @@ from typing import cast
 import json
 
 
-# Root Path
-ROOT: Path = Path.cwd()
-# Default Embedding Model
-EMBED_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
-# Default LLM
-GEMMA3N: str = "gemma3n:e4b"
-
-
 class QueryEngine:
     """This class implements the RAG pipeline that forms the backbone of the Research Companion application.
     
     It creates a vector index for the input files and constructs a Query Engine (soon extended to Chat Engine).
     The Query Engine encapsulates the end - to - end workflow executing the RAG pipeline with Gemma3n:e4b model."""
 
-    def __init__(self, filename: str = "YOLOv7.pdf", embed_model: str = EMBED_MODEL, llm: str = GEMMA3N) -> None:
+    def __init__(self, filename: str = "YOLOv7.pdf") -> None:
         """Class Constructor."""
-        self.llm = Ollama(model=llm, request_timeout=300.0, context_window=4000)
+        self.llm = Ollama(model=settings.llm_model_name, request_timeout=300.0, context_window=4000)
         self.structured_llm = self.llm.as_structured_llm(ResearchResponse)
 
         self.documents: list[Document] = []
         self.vector_store: VectorStoreIndex  # Current VectorStore only create Indexes using Text, need to extend to MultiModal => Todo.
-        self.embed_model = HuggingFaceEmbedding(model_name=embed_model) 
+        self.embed_model = HuggingFaceEmbedding(model_name=settings.embedding_model_name) 
 
         self.file_name: Path = Path(filename)
-        self.file_registry: Path = ROOT / "assets"
-        self.index_registry: Path = ROOT / "vector_store"
+        self.file_registry: Path = settings.asset_path
+        self.index_registry: Path = settings.vector_store_path
         self.file_path: Path = self.file_registry / filename
 
         self.query_engine = self.construct_query_engine()
