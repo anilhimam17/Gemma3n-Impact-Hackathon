@@ -3,3 +3,9 @@ __pycache__
 
 # Ignoring Legacy Files from Gradio
 .gradio
+
+# Ignoring the Project Environment Files
+.env
+
+# Ignoring the generated indexes
+vector_store/
