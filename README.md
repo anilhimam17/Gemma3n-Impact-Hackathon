@@ -39,7 +39,14 @@ A `Multimodal`, `Conversational AI` research assistant powered by **Google's Gem
     ```bash
     pip install -r requirements.txt
     ```
-### 3. Run the program:
+### 3. Create the Project Environemnt to automate the build
+- To reduce the pain of debugging and ensuring modularity all the models, paths and other project specific configuration are provided in an example `.example-env` file.
+- To use the example configurations that present in the repo:
+    ```bash
+    cp .example-env .env
+    ```
+- Feel free to change the configurations to your preferences by making modifications to the `.env` file.
+### 4. Run the program:
 - If you have **UV package manager**: 
     ```bash
     uv run main.py
