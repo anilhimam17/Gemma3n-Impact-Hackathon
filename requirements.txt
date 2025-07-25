@@ -5,9 +5,7 @@ aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
     # via aiohttp
 aiohttp==3.12.14
-    # via
-    #   huggingface-hub
-    #   llama-index-core
+    # via llama-index-core
 aiosignal==1.4.0
     # via aiohttp
 aiosqlite==0.21.0
@@ -24,7 +22,7 @@ attrs==25.3.0
     # via aiohttp
 audioop-lts==0.2.1
     # via gradio
-banks==2.1.3
+banks==2.2.0
     # via llama-index-core
 beautifulsoup4==4.13.4
     # via llama-index-readers-file
@@ -59,7 +57,7 @@ distro==1.9.0
     # via openai
 fastapi==0.116.1
     # via gradio
-ffmpy==0.6.0
+ffmpy==0.6.1
     # via gradio
 filelock==3.18.0
     # via
@@ -78,7 +76,7 @@ fsspec==2025.7.0
     #   huggingface-hub
     #   llama-index-core
     #   torch
-gradio==5.38.0
+gradio==5.38.2
     # via
     #   gemma3n-impact-hackathon (pyproject.toml)
     #   gradio-pdf
@@ -88,7 +86,7 @@ gradio-pdf==0.0.22
     # via gemma3n-impact-hackathon (pyproject.toml)
 greenlet==3.2.3
     # via sqlalchemy
-griffe==1.7.3
+griffe==1.8.0
     # via banks
 groovy==0.1.2
     # via gradio
@@ -109,11 +107,10 @@ httpx==0.28.1
     #   ollama
     #   openai
     #   safehttpx
-huggingface-hub==0.33.4
+huggingface-hub==0.34.0
     # via
     #   gradio
     #   gradio-client
-    #   llama-index-embeddings-huggingface
     #   sentence-transformers
     #   tokenizers
     #   transformers
@@ -140,7 +137,7 @@ llama-cloud==0.1.32
     #   llama-index-indices-managed-llama-cloud
 llama-cloud-services==0.6.43
     # via llama-parse
-llama-index==0.12.49
+llama-index==0.12.52
     # via gemma3n-impact-hackathon (pyproject.toml)
 llama-index-agent-openai==0.4.12
     # via
@@ -148,13 +145,13 @@ llama-index-agent-openai==0.4.12
     #   llama-index-program-openai
 llama-index-cli==0.4.4
     # via llama-index
-llama-index-core==0.12.49
+llama-index-core==0.12.52.post1
     # via
     #   llama-cloud-services
     #   llama-index
     #   llama-index-agent-openai
     #   llama-index-cli
-    #   llama-index-embeddings-huggingface
+    #   llama-index-embeddings-ollama
     #   llama-index-embeddings-openai
     #   llama-index-indices-managed-llama-cloud
     #   llama-index-llms-ollama
@@ -164,7 +161,7 @@ llama-index-core==0.12.49
     #   llama-index-question-gen-openai
     #   llama-index-readers-file
     #   llama-index-readers-llama-parse
-llama-index-embeddings-huggingface==0.5.5
+llama-index-embeddings-ollama==0.6.0
     # via gemma3n-impact-hackathon (pyproject.toml)
 llama-index-embeddings-openai==0.3.1
     # via
@@ -196,7 +193,7 @@ llama-index-readers-file==0.4.8
     # via llama-index
 llama-index-readers-llama-parse==0.4.0
     # via llama-index
-llama-index-workflows==1.1.0
+llama-index-workflows==1.2.0
     # via llama-index-core
 llama-parse==0.6.43
     # via llama-index-readers-llama-parse
@@ -228,7 +225,7 @@ nltk==3.9.1
     # via
     #   llama-index
     #   llama-index-core
-numpy==2.3.1
+numpy==2.3.2
     # via
     #   gemma3n-impact-hackathon (pyproject.toml)
     #   gradio
@@ -238,8 +235,10 @@ numpy==2.3.1
     #   scipy
     #   transformers
 ollama==0.5.1
-    # via llama-index-llms-ollama
-openai==1.97.0
+    # via
+    #   llama-index-embeddings-ollama
+    #   llama-index-llms-ollama
+openai==1.97.1
     # via
     #   llama-index-agent-openai
     #   llama-index-embeddings-openai
@@ -267,12 +266,14 @@ platformdirs==4.3.8
     # via
     #   banks
     #   llama-cloud-services
+    #   llama-index-core
 propcache==0.3.2
     # via
     #   aiohttp
     #   yarl
 pydantic==2.11.7
     # via
+    #   gemma3n-impact-hackathon (pyproject.toml)
     #   banks
     #   fastapi
     #   gradio
@@ -283,8 +284,11 @@ pydantic==2.11.7
     #   llama-index-workflows
     #   ollama
     #   openai
+    #   pydantic-settings
 pydantic-core==2.33.2
     # via pydantic
+pydantic-settings==2.10.1
+    # via gemma3n-impact-hackathon (pyproject.toml)
 pydub==0.25.1
     # via gradio
 pygments==2.19.2
@@ -294,7 +298,10 @@ pypdf==5.8.0
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.1.1
-    # via llama-cloud-services
+    # via
+    #   gemma3n-impact-hackathon (pyproject.toml)
+    #   llama-cloud-services
+    #   pydantic-settings
 python-multipart==0.0.20
     # via gradio
 pytz==2025.2
@@ -316,15 +323,15 @@ requests==2.32.4
     #   llama-index-core
     #   tiktoken
     #   transformers
-rich==14.0.0
+rich==14.1.0
     # via typer
-ruff==0.12.4
+ruff==0.12.5
     # via gradio
 safehttpx==0.1.6
     # via gradio
 safetensors==0.5.3
     # via transformers
-scikit-learn==1.7.0
+scikit-learn==1.7.1
     # via sentence-transformers
 scipy==1.16.0
     # via
@@ -333,9 +340,7 @@ scipy==1.16.0
 semantic-version==2.10.0
     # via gradio
 sentence-transformers==5.0.0
-    # via
-    #   gemma3n-impact-hackathon (pyproject.toml)
-    #   llama-index-embeddings-huggingface
+    # via gemma3n-impact-hackathon (pyproject.toml)
 setuptools==80.9.0
     # via
     #   llama-index-core
@@ -352,7 +357,7 @@ soupsieve==2.7
     # via beautifulsoup4
 sqlalchemy==2.0.41
     # via llama-index-core
-starlette==0.47.1
+starlette==0.47.2
     # via
     #   fastapi
     #   gradio
@@ -382,7 +387,7 @@ tqdm==4.67.1
     #   openai
     #   sentence-transformers
     #   transformers
-transformers==4.53.2
+transformers==4.53.3
     # via
     #   gemma3n-impact-hackathon (pyproject.toml)
     #   sentence-transformers
@@ -411,7 +416,9 @@ typing-inspect==0.9.0
     #   dataclasses-json
     #   llama-index-core
 typing-inspection==0.4.1
-    # via pydantic
+    # via
+    #   pydantic
+    #   pydantic-settings
 tzdata==2025.2
     # via pandas
 urllib3==2.5.0
