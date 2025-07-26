@@ -8,6 +8,8 @@ dependencies = [
     "gradio>=4.44.1",
     "gradio-pdf>=0.0.22",
     "llama-index>=0.12.49",
+    "llama-index-embeddings-clip>=0.4.0",
+    "llama-index-embeddings-huggingface>=0.5.5",
     "llama-index-embeddings-ollama>=0.6.0",
     "llama-index-llms-ollama>=0.6.2",
     "numpy>=2.0.2",
@@ -16,5 +18,7 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "python-dotenv>=1.1.1",
     "sentence-transformers>=5.0.0",
+    "torch>=2.7.1",
+    "torchvision>=0.22.1",
     "transformers>=4.53.2",
 ]
