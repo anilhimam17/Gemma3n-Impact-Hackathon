@@ -17,7 +17,7 @@ CUSTOM_PROMPT_TEMPLATE = PromptTemplate(
     You will 'always' remain clear about what information comes directly from the document and your expertise in the context provided from the document.
     If you are unsure about your expertise in the domain, you will 'avoid' enriching the answer addressing the user's query.
     \n\n
-    'Context from the document:\n
+    Context from the document:\n
     -----------------------------\n
     {context_str}\n
     -----------------------------\n

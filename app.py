@@ -1,8 +1,12 @@
 import gradio as gr
+from gradio.themes import Ocean
 from gradio_pdf import PDF
-from src.query_engine import QueryEngine
+
 from pathlib import Path
+import tempfile
 import json
+
+from src.query_engine import QueryEngine
 
 
 class GradioInterface:
@@ -10,7 +14,7 @@ class GradioInterface:
     def __init__(self):
 
         # Gradio Layout and Component Instance Variables
-        self.block_params = {"title": "Research Companion", "fill_height": True, "fill_width": True}
+        self.block_params = {"title": "Research Companion", "fill_height": True, "fill_width": True, "theme": Ocean()}
         self.mark_style = 'background-color: #c9c8c7; padding: 0.2em 0.4em; border-radius: 5px;'
         self.desciption_style = 'text-align: center; line-height: 2.5; font-size: 16px;'
         self.top_description = f"""
@@ -27,6 +31,9 @@ class GradioInterface:
         # Query Engine Parameters
         self.query_engine = None
 
+        # Summary Place holder
+        self.summary = ""
+
 
     # ==== Interface Builder ====
     def page(self) -> None:
@@ -34,10 +41,6 @@ class GradioInterface:
 
         # The main block enclosing the entire interface.
         with gr.Blocks(**self.block_params) as demo:
-
-            # Sidebar for additional features
-            with gr.Sidebar(position="left"):
-                user_name = gr.Markdown(value="### Hi Username")
 
             # Top Division for the Header
             with gr.Row():
@@ -49,22 +52,42 @@ class GradioInterface:
 
             # Splitting the page into two sections
             with gr.Row():
+
+                # PDF Viewer Section
                 with gr.Column(scale=1):
                     pdf_comp = PDF(label="Upload PDF", interactive=True)
+
+                # Chatbox Section
                 with gr.Column(scale=1):
                     chatbot = gr.Chatbot(
-                        label="Research Companion", bubble_full_width=False, 
+                        label="Research Companion", bubble_full_width=False, type="messages",
                         placeholder="Upload a PDF and begin the Research Journey."
                     )
                     message_box = gr.Textbox(label="Ask questions about the Document", interactive=True)
                     voice_input = gr.Audio(label="Speak with the Document", interactive=False)
-                    submit_button = gr.Button(value="Submit")
 
+                    # Columns for the buttons
+                    with gr.Row():
+                        with gr.Column():
+                            submit_button = gr.Button(value="Submit")
+                        with gr.Column():
+                            summary_button = gr.Button(value="Generate Summary")
+                    with gr.Row():
+                        download_file = gr.File(label="Summary File", interactive=False)
+
+                    # Multiple event triggers for the Chat Interface
                     gr.on(
                         triggers=[message_box.submit, submit_button.click],
                         fn=self.run_query,
                         inputs=[pdf_comp, message_box, chatbot],
                         outputs=[chatbot, message_box]
+                    )
+
+                    # Event Listener for the Summary
+                    summary_button.click(
+                        fn=self.generate_summary, inputs=chatbot, outputs=chatbot
+                    ).then(
+                        fn=self.output_summary_file, inputs=None, outputs=download_file
                     )
         
         # Rendering the page.
@@ -81,12 +104,14 @@ class GradioInterface:
 
         # If pdf was not uploaded
         if not pdf_path:
-            history.append((message, "Please upload a PDF document first."))
-            yield history, "" 
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": "Please upload a document to begin research."})
+            yield history, ""
             return
         
         # Begin Thinking Process
-        history.append((message, "Thinking..."))
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": "Thinking ..."})
         yield history, ""
 
         # If the query engine was not created yet or the PDF has changed
@@ -111,6 +136,60 @@ class GradioInterface:
                 )
         
         final_response = f"{answer}{citations_markdown}"
-        history[-1] = (message, final_response)
+        history[-1] = {"role": "assistant", "content": final_response}
         yield history, ""
         return
+    
+    def generate_summary(self, history: list):
+        """Generates a summary by running inference on the model for the entire chat."""
+        
+        # If the summary is being generated before chatting
+        if not self.query_engine:
+            history.append({
+                "role": "assistant", 
+                "content": "Failed to generate a Summary. Please begin a Conversation or Upload a document."
+            })
+            yield history
+            return
+        
+        # Indication for generating a summary
+        history.append({"role": "user", "content": "Generate a summary for the conversation."})
+        history.append({"role": "assistant", "content": "Generating the summary ..."})
+        yield history
+
+        # Formatting the history for the prompt template
+        formatted_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in history])
+        
+        summary_prompt = f"""You will now generate a consise summary of the entire chat history.
+        You will first generate a title for the entire chat history.
+        You will then reflect on keypoints, key ideas, key analogies and key sources used through out the chat history.
+        You will compile all the information for easy consumption.
+        'Keep it simple' and follow the thumb rule 'every single idea is one paragraph'.
+        At the end provide a conclusion if you deem it necessary based on expertise in the domain.
+        Ensure to use 'End of line characters' where necessary to format your response.
+        Here is the Chat history:
+        ----------------------------
+        {formatted_history}
+        ----------------------------
+        Answer: """
+
+        # Generating a summary
+        response_json = self.query_engine.run_query(summary_prompt)
+        response_data = json.loads(response_json)
+        
+        # Storing the summary for usage in the follow-up methods
+        self.summary = response_data.get("answer", "Sorry couldn't generate the summary")
+
+        history[-1] = {"role": "assistant", "content": "Summary generated successfully. You can download it now."}
+        yield history
+        return
+    
+    def output_summary_file(self):
+        """Utilises the generated summary and output a temporary file."""
+
+        # Creating a temporary file
+        temp_dir = Path(tempfile.gettempdir())
+        temp_file = temp_dir / "summary.txt"
+        temp_file.write_text(self.summary, encoding="utf-8")
+
+        return str(temp_file)
