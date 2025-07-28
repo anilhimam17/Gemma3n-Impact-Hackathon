@@ -3,14 +3,12 @@ from llama_index.core import (
     SimpleDirectoryReader, VectorStoreIndex, Document, StorageContext,
     load_index_from_storage, Settings
 )
-from llama_index.core.indices import MultiModalVectorStoreIndex
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine.types import ChatMode
 
 # Ollama Specific Imports
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.embeddings.clip import ClipEmbedding
 
 # Project Module Imports
 from src.config import settings
@@ -26,7 +24,6 @@ import json
 # Global Configuration of the Settings for Llama-Index
 Settings.llm = Ollama(model=settings.llm_model_name, request_timeout=300.0, context_window=20000)
 Settings.embed_model = OllamaEmbedding(settings.embedding_model_name)
-# Settings.image_embed_model = ClipEmbedding()
 
 
 class QueryEngine:
@@ -38,12 +35,11 @@ class QueryEngine:
     def __init__(self, filepath: str) -> None:
         """Class Constructor."""
         self.documents: list[Document] = []
-        self.vector_store: VectorStoreIndex 
+        self.vector_store: VectorStoreIndex
 
         self.index_registry: Path = settings.vector_store_path
         self.file_path: Path = Path(filepath)
 
-        # self.image_embed_model = ClipEmbedding(model_name="ViT-B/32")
         self.structured_llm = Settings.llm.as_structured_llm(ResearchResponse)
         self.memory_buffer = ChatMemoryBuffer.from_defaults(token_limit=20000)
         self.query_engine = self.construct_query_engine()
@@ -60,10 +56,10 @@ class QueryEngine:
             # Creating the Document from the specific file path
             self.documents = SimpleDirectoryReader(input_files=[self.file_path]).load_data()
             # Calculating the Indexes
-            # self.vector_store = VectorStoreIndex.from_documents(self.documents, embed_model=Settings.embed_model, show_progress=True)
-            self.vector_store = VectorStoreIndex.from_documents(
-                documents=self.documents, show_progress=True
-            )
+            self.vector_store = VectorStoreIndex.from_documents(self.documents, embed_model=Settings.embed_model, show_progress=True)
+            # self.vector_store = MultiModalVectorStoreIndex.from_documents(
+            #     documents=self.documents, show_progress=True
+            # )
             # Storing the Indexes for reuse
             self.vector_store.storage_context.persist(persist_dir=index_dir)
         else:
@@ -81,7 +77,6 @@ class QueryEngine:
         )
 
         return custom_chat_eng
-        # return custom_query_eng
     
     def run_query(self, user_prompt: str) -> str:
         """Runs a user prompt for query on the Query Engine."""
