@@ -22,7 +22,7 @@ import json
 
 
 # Global Configuration of the Settings for Llama-Index
-Settings.llm = Ollama(model=settings.llm_model_name, request_timeout=300.0, context_window=20000)
+Settings.llm = Ollama(model=settings.llm_model_name, request_timeout=300.0, context_window=30000)
 Settings.embed_model = OllamaEmbedding(settings.embedding_model_name)
 
 
@@ -41,7 +41,7 @@ class QueryEngine:
         self.file_path: Path = Path(filepath)
 
         self.structured_llm = Settings.llm.as_structured_llm(ResearchResponse)
-        self.memory_buffer = ChatMemoryBuffer.from_defaults(token_limit=20000)
+        self.memory_buffer = ChatMemoryBuffer.from_defaults(token_limit=30000)
         self.query_engine = self.construct_query_engine()
 
     def check_index_exists(self) -> bool:
@@ -56,10 +56,9 @@ class QueryEngine:
             # Creating the Document from the specific file path
             self.documents = SimpleDirectoryReader(input_files=[self.file_path]).load_data()
             # Calculating the Indexes
-            self.vector_store = VectorStoreIndex.from_documents(self.documents, embed_model=Settings.embed_model, show_progress=True)
-            # self.vector_store = MultiModalVectorStoreIndex.from_documents(
-            #     documents=self.documents, show_progress=True
-            # )
+            self.vector_store = VectorStoreIndex.from_documents(
+                self.documents, embed_model=Settings.embed_model, show_progress=True
+            )
             # Storing the Indexes for reuse
             self.vector_store.storage_context.persist(persist_dir=index_dir)
         else:
