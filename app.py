@@ -7,6 +7,7 @@ import tempfile
 import json
 
 from src.query_engine import QueryEngine
+from src.audio_transcription import AudioTranscription
 
 
 class GradioInterface:
@@ -31,9 +32,11 @@ class GradioInterface:
         # Query Engine Parameters
         self.query_engine = None
 
+        # Audio Transcription Model
+        self.whisper_audio = AudioTranscription()
+
         # Summary Place holder
         self.summary = ""
-
 
     # ==== Interface Builder ====
     def page(self) -> None:
@@ -96,23 +99,34 @@ class GradioInterface:
         demo.launch()
 
     # ==== Helper Functions ====
-    def run_query(self, pdf_path: str, message: dict, history: list):
+    def run_query(self, pdf_path: str, multimodal_chat: dict, history: list):
         """Propagates the given query through the AI agent."""
         
-        # If no message was sent
-        if not message["text"]:
+        # If no multimodal_chat was sent
+        if not multimodal_chat["text"] and not multimodal_chat["files"]:
             yield history, {"text": ""}
             return
 
         # If pdf was not uploaded
         if not pdf_path:
-            history.append({"role": "user", "content": message["text"]})
+            history.append({"role": "user", "content": multimodal_chat["text"]})
             history.append({"role": "assistant", "content": "Please upload a document to begin research."})
             yield history, {"text": ""}
             return
         
-        # Begin Thinking Process
-        history.append({"role": "user", "content": message["text"]})
+        # Utilising the Text Input
+        user_prompt: str = ""
+        if multimodal_chat["text"]:
+            history.append({"role": "user", "content": multimodal_chat["text"]})
+            user_prompt = multimodal_chat["text"]
+        # Applying Whisper for Audio Transcription
+        elif self.whisper_audio.check_audio(multimodal_chat["files"]):
+            transcription = self.whisper_audio.transcribe(multimodal_chat["files"])
+            history.append({"role": "user", "content": transcription[0]["text"]})
+            user_prompt = transcription[0]["text"]
+            print(transcription)
+
+        # Begining Thinking Process
         history.append({"role": "assistant", "content": "Thinking ..."})
         yield history, {"text": ""}
 
@@ -121,7 +135,7 @@ class GradioInterface:
             self.query_engine = QueryEngine(pdf_path)
 
         # Generating a response
-        response_json = self.query_engine.run_query(message["text"])
+        response_json = self.query_engine.run_query(user_prompt)
         response_data = json.loads(response_json)
         answer = response_data.get("answer", "Sorry no answer was found")
 
