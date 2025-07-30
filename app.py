@@ -63,8 +63,10 @@ class GradioInterface:
                         label="Research Companion", bubble_full_width=False, type="messages",
                         placeholder="Upload a PDF and begin the Research Journey."
                     )
-                    message_box = gr.Textbox(label="Ask questions about the Document", interactive=True)
-                    voice_input = gr.Audio(label="Speak with the Document", interactive=False)
+                    multimodal_box = gr.MultimodalTextbox(
+                        show_label=False, placeholder="Chat with the Research Companion",
+                        sources=["microphone", "upload"], file_types=["file"], file_count="multiple"
+                    )
 
                     # Columns for the buttons
                     with gr.Row():
@@ -77,10 +79,10 @@ class GradioInterface:
 
                     # Multiple event triggers for the Chat Interface
                     gr.on(
-                        triggers=[message_box.submit, submit_button.click],
+                        triggers=[multimodal_box.submit, submit_button.click],
                         fn=self.run_query,
-                        inputs=[pdf_comp, message_box, chatbot],
-                        outputs=[chatbot, message_box]
+                        inputs=[pdf_comp, multimodal_box, chatbot],
+                        outputs=[chatbot, multimodal_box]
                     )
 
                     # Event Listener for the Summary
@@ -94,32 +96,32 @@ class GradioInterface:
         demo.launch()
 
     # ==== Helper Functions ====
-    def run_query(self, pdf_path: str, message: str, history: list):
+    def run_query(self, pdf_path: str, message: dict, history: list):
         """Propagates the given query through the AI agent."""
         
         # If no message was sent
-        if not message:
-            yield history, ""
+        if not message["text"]:
+            yield history, {"text": ""}
             return
 
         # If pdf was not uploaded
         if not pdf_path:
-            history.append({"role": "user", "content": message})
+            history.append({"role": "user", "content": message["text"]})
             history.append({"role": "assistant", "content": "Please upload a document to begin research."})
-            yield history, ""
+            yield history, {"text": ""}
             return
         
         # Begin Thinking Process
-        history.append({"role": "user", "content": message})
+        history.append({"role": "user", "content": message["text"]})
         history.append({"role": "assistant", "content": "Thinking ..."})
-        yield history, ""
+        yield history, {"text": ""}
 
         # If the query engine was not created yet or the PDF has changed
         if self.query_engine is None or self.query_engine.file_path != Path(pdf_path):
             self.query_engine = QueryEngine(pdf_path)
 
         # Generating a response
-        response_json = self.query_engine.run_query(message)
+        response_json = self.query_engine.run_query(message["text"])
         response_data = json.loads(response_json)
         answer = response_data.get("answer", "Sorry no answer was found")
 
@@ -137,7 +139,7 @@ class GradioInterface:
         
         final_response = f"{answer}{citations_markdown}"
         history[-1] = {"role": "assistant", "content": final_response}
-        yield history, ""
+        yield history, {"text": ""}
         return
     
     def generate_summary(self, history: list):
