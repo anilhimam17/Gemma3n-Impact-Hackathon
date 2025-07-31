@@ -27,3 +27,17 @@ CUSTOM_PROMPT_TEMPLATE = PromptTemplate(
     -----------------------------\n
     Answer: """
 )
+
+
+CUSTOM_SUMMARY_TEMPLATE = PromptTemplate(
+    """You will now generate a consise summary of the entire chat history.
+    You will first provide a title for the entire chat history based on the domain of the conversation and follow-up with two 'End of line characters'.
+    You will then reflect on keypoints, key ideas, key analogies and key sources used through out the chat history.
+    You will compile all the information for easy consumption.
+    'Keep it simple' and follow the thumb rule 'every single idea is one paragraph'.
+    At the end provide a conclusion if you deem it necessary based on expertise in the domain.
+    Ensure to use 'End of line characters' where necessary to format your response.
+    Here is the Chat history:
+    ----------------------------
+    Answer: """
+)

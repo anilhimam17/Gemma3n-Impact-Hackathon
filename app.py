@@ -124,7 +124,6 @@ class GradioInterface:
             transcription = self.whisper_audio.transcribe(multimodal_chat["files"])
             history.append({"role": "user", "content": transcription[0]["text"]})
             user_prompt = transcription[0]["text"]
-            print(transcription)
 
         # Begining Thinking Process
         history.append({"role": "assistant", "content": "Thinking ..."})
