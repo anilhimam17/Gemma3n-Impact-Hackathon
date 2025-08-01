@@ -68,7 +68,7 @@ class GradioInterface:
                     )
                     multimodal_box = gr.MultimodalTextbox(
                         show_label=False, placeholder="Chat with the Research Companion",
-                        sources=["microphone", "upload"], file_types=["file"], file_count="multiple"
+                        sources=["microphone"], file_types=["file"], file_count="multiple"
                     )
 
                     # Columns for the buttons

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     class Config:
         """This class provides access to the environments variables for configuration."""
         env_file: str = ".env"
-        env_file_encodingl: str = "utf-8"
+        env_file_encoding: str = "utf-8"
 
 
 settings = Settings()  # type: ignore
