@@ -29,10 +29,10 @@ import chromadb
 # Global Configuration of the Settings for Llama-Index
 Settings.llm = Ollama(
     model=settings.llm_model_name, request_timeout=300.0, 
-    context_window=30000, additional_kwargs={"num_predict": 2048}
+    context_window=30000, additional_kwargs={"num_predict": 3072}
 )
 Settings.embed_model = OllamaEmbedding(settings.embedding_model_name)
-Settings.transformations = [SentenceSplitter(chunk_size=1024, chunk_overlap=75)]
+Settings.transformations = [SentenceSplitter(chunk_size=1024, chunk_overlap=120)]
 
 
 class QueryEngine:
@@ -125,8 +125,10 @@ class QueryEngine:
     def run_query(self, user_prompt: str) -> str:
         """Runs a user prompt for query on the Query Engine."""
         response_obj = self.query_engine.chat(user_prompt)
+        response_json = json.loads(str(response_obj))
+        research_response_output = ResearchResponse.model_validate(response_json)
         try:
-            return response_obj.model_dump_json(indent=4)
+            return research_response_output.model_dump_json(indent=4)
         except Exception as e:
             print(f"Error during query: {e}")
             error_response = ResearchResponse(
