@@ -21,9 +21,13 @@ CUSTOM_PROMPT_TEMPLATE = PromptTemplate(
     -----------------------------\n
     {context_str}\n
     -----------------------------\n
-    'User's Question:\n
+    Chat History:\n
     -----------------------------\n
-    {query_str}\n
+    {chat_history}\n
+    -----------------------------\n
+    User's Question:\n
+    -----------------------------\n
+    {question}\n
     -----------------------------\n
     Answer: """
 )

@@ -8,6 +8,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import ContextChatEngine
+from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 from llama_index.core.vector_stores.types import VectorStoreQueryMode
 
 # Ollama Specific Imports
@@ -31,7 +32,7 @@ Settings.llm = Ollama(
     context_window=30000, additional_kwargs={"num_predict": 2048}
 )
 Settings.embed_model = OllamaEmbedding(settings.embedding_model_name)
-Settings.transformations = [SentenceSplitter(chunk_size=512, chunk_overlap=50)]
+Settings.transformations = [SentenceSplitter(chunk_size=1024, chunk_overlap=75)]
 
 
 class QueryEngine:
@@ -85,6 +86,10 @@ class QueryEngine:
             # Creating the Document from the specific file path
             self.documents = PyMuPDFReader().load_data(file_path=self.file_path)
             
+            # Uniquely storing the documents in the DB using Filepath
+            for doc in self.documents:
+                doc.metadata["file_path"] = str(self.file_path.resolve())
+
             # Calculating the New Indexes for ChromaVectorStore
             self.index = VectorStoreIndex.from_documents(
                 self.documents, embed_model=Settings.embed_model, 
@@ -97,10 +102,17 @@ class QueryEngine:
                 vector_store=self.vector_store, storage_context=self.storage_context
             )
 
+        # Loading the Calculated Indexes for the correct document
+        filepath_filters = MetadataFilters(
+            filters=[
+                ExactMatchFilter(key="file_path", value=str(self.file_path.resolve()))
+            ]
+        )
+
         # Creating the Custom Retriever
         custom_retriever = VectorIndexRetriever(
             index=self.index, similarity_top_k=self.top_k, embed_model=Settings.embed_model,
-            vector_store_query_mode=VectorStoreQueryMode.SEMANTIC_HYBRID, alpha=0.5
+            vector_store_query_mode=VectorStoreQueryMode.SEMANTIC_HYBRID, alpha=0.5, filters=filepath_filters
         )
 
         custom_chat_eng = ContextChatEngine.from_defaults(
@@ -113,9 +125,18 @@ class QueryEngine:
     def run_query(self, user_prompt: str) -> str:
         """Runs a user prompt for query on the Query Engine."""
         response_obj = self.query_engine.chat(user_prompt)
-        response_json = json.loads(str(response_obj))
-        research_response_output = ResearchResponse.model_validate(response_json)
-        return research_response_output.model_dump_json(indent=4)
+        try:
+            return response_obj.model_dump_json(indent=4)
+        except Exception as e:
+            print(f"Error during query: {e}")
+            error_response = ResearchResponse(
+                answer="""Sorry, I have encountered an issue processing your request.
+                This can happen sometimes when a document is loaded for the first time or 
+                the first query on a new document.
+                Could you please try asking the question again.""",
+                citations=[]
+            )
+            return error_response.model_dump_json(indent=4)
 
 
 # ==== Unit Test ====
