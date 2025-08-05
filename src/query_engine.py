@@ -17,7 +17,10 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 
 # Project Module Imports
 from src.config import settings
-from src.response_structures import ResearchResponse
+from src.response_structures import (
+    UnifiedResponse, SimpleResponse, ResearchResponse, 
+    SummaryResponse, ResponseTypes
+)
 from src.structured_prompt import CUSTOM_PROMPT_TEMPLATE
 
 # Miscellaneous Imports
@@ -63,7 +66,6 @@ class QueryEngine:
 
         # Chat Engine Parameters
         self.top_k = settings.top_k
-        self.structured_llm = Settings.llm.as_structured_llm(ResearchResponse)
         self.memory_buffer = ChatMemoryBuffer.from_defaults(token_limit=30000)
         self.query_engine = self.construct_chat_engine()
 
@@ -110,33 +112,42 @@ class QueryEngine:
         )
 
         # Creating the Custom Retriever
-        custom_retriever = VectorIndexRetriever(
+        self.custom_retriever = VectorIndexRetriever(
             index=self.index, similarity_top_k=self.top_k, embed_model=Settings.embed_model,
             vector_store_query_mode=VectorStoreQueryMode.SEMANTIC_HYBRID, alpha=0.5, filters=filepath_filters
         )
-
-        custom_chat_eng = ContextChatEngine.from_defaults(
-            retriever=custom_retriever, llm=self.structured_llm, 
-            context_prompt=CUSTOM_PROMPT_TEMPLATE, memory=self.memory_buffer
-        )
-
-        return custom_chat_eng
     
-    def run_query(self, user_prompt: str) -> str:
+    def run_query(self, user_prompt: str, response_type: ResponseTypes) -> str:
         """Runs a user prompt for query on the Query Engine."""
-        response_obj = self.query_engine.chat(user_prompt)
-        response_json = json.loads(str(response_obj))
-        research_response_output = ResearchResponse.model_validate(response_json)
+        map_response = {
+            ResponseTypes.RESEARCH: ResearchResponse,
+            ResponseTypes.SUMMARY: SummaryResponse,
+            ResponseTypes.SIMPLE: SimpleResponse
+        }
+
+        chat_response_type = map_response.get(response_type)
+        if not chat_response_type:
+            raise ValueError("The chosen response type by the agent is invalid.")
+        
         try:
-            return research_response_output.model_dump_json(indent=4)
+            structured_llm = Settings.llm.as_structured_llm(chat_response_type)
+            chat_engine = ContextChatEngine.from_defaults(
+                retriever=self.custom_retriever, llm=structured_llm, 
+                memory=self.memory_buffer, context_template=CUSTOM_PROMPT_TEMPLATE
+            )
+            response_obj = chat_engine.chat(user_prompt)
+            response_json = json.loads(str(response_obj))
+            response_output = chat_response_type.model_validate(response_json)
+            return response_output.model_dump_json(indent=4)
         except Exception as e:
             print(f"Error during query: {e}")
-            error_response = ResearchResponse(
-                answer="""Sorry, I have encountered an issue processing your request.
-                This can happen sometimes when a document is loaded for the first time or 
-                the first query on a new document.
-                Could you please try asking the question again.""",
-                citations=[]
+            error_response = UnifiedResponse(
+                response=SimpleResponse(
+                    answer="""Sorry, I have encountered an issue processing your request.
+                    This can happen sometimes when a document is loaded for the first time or 
+                    the first query on a new document.
+                    Could you please try asking the question again."""
+                )
             )
             return error_response.model_dump_json(indent=4)
 

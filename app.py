@@ -6,7 +6,9 @@ from pathlib import Path
 import tempfile
 import json
 
-from src.query_engine import QueryEngine
+from src.structured_prompt import CUSTOM_SUMMARY_TEMPLATE
+from src.response_structures import ResponseTypes
+from src.routing_agent import RoutingAgent
 from src.audio_transcription import AudioTranscription
 
 
@@ -30,7 +32,7 @@ class GradioInterface:
         """
 
         # Query Engine Parameters
-        self.query_engine = None
+        self.routing_agent: RoutingAgent | None = None
 
         # Audio Transcription Model
         self.whisper_audio = AudioTranscription()
@@ -76,7 +78,7 @@ class GradioInterface:
                         with gr.Column():
                             submit_button = gr.Button(value="Submit")
                         with gr.Column():
-                            summary_button = gr.Button(value="Generate Summary")
+                            summary_button = gr.Button(value="Generate Conversation Summary")
                     with gr.Row():
                         download_file = gr.File(label="Summary File", interactive=False)
 
@@ -99,7 +101,7 @@ class GradioInterface:
         demo.launch()
 
     # ==== Helper Functions ====
-    def run_query(self, pdf_path: str, multimodal_chat: dict, history: list):
+    async def run_query(self, pdf_path: str, multimodal_chat: dict, history: list):
         """Propagates the given query through the AI agent."""
         
         # If no multimodal_chat was sent
@@ -130,36 +132,48 @@ class GradioInterface:
         yield history, {"text": ""}
 
         # If the query engine was not created yet or the PDF has changed
-        if self.query_engine is None or self.query_engine.file_path != Path(pdf_path):
-            self.query_engine = QueryEngine(pdf_path)
+        if self.routing_agent is None or self.routing_agent.query_engine.file_path != Path(pdf_path):
+            self.routing_agent = RoutingAgent(pdf_path)
 
         # Generating a response
-        response_json = self.query_engine.run_query(user_prompt)
-        response_data = json.loads(response_json)
-        answer = response_data.get("answer", "Sorry no answer was found")
+        response_json, response_type = await self.routing_agent.resolve_route(user_prompt)
+        response_data = json.loads(str(response_json))
 
-        citations = response_data.get("citations", [])
-        citations_markdown = ""
-        if citations:
-            citations_markdown = "\n\n---\n\n**Sources & Citations**\n\n"
-            for idx, citation in enumerate(response_data.get("citations")):
-                source_text = citation.get('source_text', 'N/A').replace('\n', ' ')
-                citations_markdown += ( 
-                    f"**{idx + 1}. Source from Page {citation.get('page_number', 'N/A')}:**\n" 
-                    f"> {source_text}\n\n" 
-                    f"*Simplified Explanation:*\n{citation.get('simplification', 'N/A')}\n\n" 
-                )
-        
-        final_response = f"{answer}{citations_markdown}"
-        history[-1] = {"role": "assistant", "content": final_response}
+        if response_type == ResponseTypes.RESEARCH:
+            answer = response_data.get("answer", "Sorry no answer was found")
+            citations = response_data.get("citations", [])
+            citations_markdown = ""
+            if citations:
+                citations_markdown = "\n\n---\n\n**Sources & Citations**\n\n"
+                for idx, citation in enumerate(citations):
+                    source_text = citation.get('source_text', 'N/A').replace('\n', ' ')
+                    citations_markdown += ( 
+                        f"**{idx + 1}. Source from Page {citation.get('page_number', 'N/A')}:**\n" 
+                        f"> {source_text}\n\n" 
+                        f"*Simplified Explanation:*\n{citation.get('simplification', 'N/A')}\n\n" 
+                    )
+            
+            final_response = f"{answer}{citations_markdown}"
+            history[-1] = {"role": "assistant", "content": final_response}
+
+        elif response_type == ResponseTypes.SIMPLE:
+            answer = response_data.get("answer", "Sorry, no answer was found.")
+            history[-1] = {"role": "assistant", "content": answer}
+
+        elif response_type == ResponseTypes.SUMMARY:
+            title = response_data.get("title", "Summary")
+            summary = response_data.get("summary", "Sorry, no conversation summary was generated.")
+            final_response = f"**{title}**\n\n{summary}\n**The conversation summary is now available for download.**"
+            history[-1] = {"role": "assistant", "content": final_response}
+
         yield history, {"text": ""}
         return
     
-    def generate_summary(self, history: list):
+    async def generate_summary(self, history: list):
         """Generates a summary by running inference on the model for the entire chat."""
         
         # If the summary is being generated before chatting
-        if not self.query_engine:
+        if not self.routing_agent:
             history.append({
                 "role": "assistant", 
                 "content": "Failed to generate a Summary. Please begin a Conversation or Upload a document."
@@ -172,25 +186,13 @@ class GradioInterface:
         history.append({"role": "assistant", "content": "Generating the summary ..."})
         yield history
 
-        # Formatting the history for the prompt template
-        
-        summary_prompt = """You will now generate a consise summary of the entire chat history.
-        You will first provide a title for the entire chat history based on the domain of the conversation and follow-up with two 'End of line characters'.
-        You will then reflect on keypoints, key ideas, key analogies and key sources used through out the chat history.
-        You will compile all the information for easy consumption.
-        'Keep it simple' and follow the thumb rule 'every single idea is one paragraph'.
-        At the end provide a conclusion if you deem it necessary based on expertise in the domain.
-        Ensure to use 'End of line characters' where necessary to format your response.
-        Here is the Chat history:
-        ----------------------------
-        Answer: """
-
         # Generating a summary
-        response_json = self.query_engine.run_query(summary_prompt)
-        response_data = json.loads(response_json)
+        response_json, _ = await self.routing_agent.resolve_route(CUSTOM_SUMMARY_TEMPLATE)
+        response_data = json.loads(str(response_json))
         
         # Storing the summary for usage in the follow-up methods
-        self.summary = response_data.get("answer", "Sorry couldn't generate the summary")
+        self.summary = response_data.get("title", "Sorry couldn't generate the title for the summary")
+        self.summary += "\n\n" + response_data.get("summary", "Sorry couldn't generate the summary")
 
         history[-1] = {"role": "assistant", "content": "Summary generated successfully. You can download it now."}
         yield history
