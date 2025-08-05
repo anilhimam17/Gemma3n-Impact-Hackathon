@@ -21,7 +21,7 @@ from src.response_structures import (
     UnifiedResponse, SimpleResponse, ResearchResponse, 
     SummaryResponse, ResponseTypes
 )
-from src.structured_prompt import CUSTOM_PROMPT_TEMPLATE
+from src.structured_prompt import RAG_PROMPT_TEMPLATE, CONCEPT_DRIVEN_SUMMARY_PROMPT_TEMPLATE
 
 # Miscellaneous Imports
 from pathlib import Path
@@ -119,25 +119,33 @@ class QueryEngine:
     
     def run_query(self, user_prompt: str, response_type: ResponseTypes) -> str:
         """Runs a user prompt for query on the Query Engine."""
-        map_response = {
+        map_response_types = {
             ResponseTypes.RESEARCH: ResearchResponse,
             ResponseTypes.SUMMARY: SummaryResponse,
             ResponseTypes.SIMPLE: SimpleResponse
         }
 
-        chat_response_type = map_response.get(response_type)
-        if not chat_response_type:
+        query_response_type = map_response_types.get(response_type)
+        if not query_response_type:
             raise ValueError("The chosen response type by the agent is invalid.")
         
         try:
-            structured_llm = Settings.llm.as_structured_llm(chat_response_type)
-            chat_engine = ContextChatEngine.from_defaults(
-                retriever=self.custom_retriever, llm=structured_llm, 
-                memory=self.memory_buffer, context_template=CUSTOM_PROMPT_TEMPLATE
-            )
+            structured_llm = Settings.llm.as_structured_llm(query_response_type)
+
+            if response_type == ResponseTypes.SUMMARY:
+                chat_engine = ContextChatEngine.from_defaults(
+                    retriever=self.custom_retriever, llm=structured_llm,
+                    memory=self.memory_buffer, context_template=CONCEPT_DRIVEN_SUMMARY_PROMPT_TEMPLATE
+                )
+            else:
+                chat_engine = ContextChatEngine.from_defaults(
+                    retriever=self.custom_retriever, llm=structured_llm, 
+                    memory=self.memory_buffer, context_template=RAG_PROMPT_TEMPLATE
+                )
+            
             response_obj = chat_engine.chat(user_prompt)
             response_json = json.loads(str(response_obj))
-            response_output = chat_response_type.model_validate(response_json)
+            response_output = query_response_type.model_validate(response_json)
             return response_output.model_dump_json(indent=4)
         except Exception as e:
             print(f"Error during query: {e}")
@@ -150,12 +158,3 @@ class QueryEngine:
                 )
             )
             return error_response.model_dump_json(indent=4)
-
-
-# ==== Unit Test ====
-# if __name__ == "__main__":
-#     gemma_engine = QueryEngine()
-#     for i in range(3):
-#         inp_prompt = input("Enter Query: ")
-#         response = gemma_engine.run_query(inp_prompt)
-#         print(response)

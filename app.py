@@ -6,7 +6,6 @@ from pathlib import Path
 import tempfile
 import json
 
-from src.structured_prompt import CUSTOM_SUMMARY_TEMPLATE
 from src.response_structures import ResponseTypes
 from src.routing_agent import RoutingAgent
 from src.audio_transcription import AudioTranscription
@@ -160,12 +159,6 @@ class GradioInterface:
             answer = response_data.get("answer", "Sorry, no answer was found.")
             history[-1] = {"role": "assistant", "content": answer}
 
-        elif response_type == ResponseTypes.SUMMARY:
-            title = response_data.get("title", "Summary")
-            summary = response_data.get("summary", "Sorry, no conversation summary was generated.")
-            final_response = f"**{title}**\n\n{summary}\n**The conversation summary is now available for download.**"
-            history[-1] = {"role": "assistant", "content": final_response}
-
         yield history, {"text": ""}
         return
     
@@ -182,19 +175,24 @@ class GradioInterface:
             return
         
         # Indication for generating a summary
-        history.append({"role": "user", "content": "Generate a summary for the conversation."})
+        history.append({"role": "user", "content": "Generate a conceptual summary for our conversation."})
         history.append({"role": "assistant", "content": "Generating the summary ..."})
         yield history
 
         # Generating a summary
-        response_json, _ = await self.routing_agent.resolve_route(CUSTOM_SUMMARY_TEMPLATE)
+        response_json, _ = await self.routing_agent.resolve_route(
+            "Generate a concept-driven summary for our entire conversation"
+        )
         response_data = json.loads(str(response_json))
         
-        # Storing the summary for usage in the follow-up methods
-        self.summary = response_data.get("title", "Sorry couldn't generate the title for the summary")
-        self.summary += "\n\n" + response_data.get("summary", "Sorry couldn't generate the summary")
+        # Storing the summary for usage in the follow-up method
+        self.summary = response_data.get("title", "Sorry the summary title couldn't be processed.")
+        self.summary += "\n\n" + response_data.get("summary", "Sorry the summary couldn't be processed.")
 
-        history[-1] = {"role": "assistant", "content": "Summary generated successfully. You can download it now."}
+        if "Sorry" in self.summary:
+            history[-1] = {"role": "assistant", "content": "Sorry the Summary couldn't be generated. Please try again"}
+        else:
+            history[-1] = {"role": "assistant", "content": "Summary generated successfully. You can download the markdown file now."}
         yield history
         return
     
@@ -203,7 +201,7 @@ class GradioInterface:
 
         # Creating a temporary file
         temp_dir = Path(tempfile.gettempdir())
-        temp_file = temp_dir / "summary.txt"
+        temp_file = temp_dir / "summary.md"
         temp_file.write_text(self.summary, encoding="utf-8")
 
         return str(temp_file)
