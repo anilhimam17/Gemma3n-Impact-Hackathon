@@ -2,11 +2,11 @@
 
 # Model Configurations
 LLM_MODEL_NAME = "gemma3n:e2b-it-q4_K_M"
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "bge-m3:latest"
 
 # Vector Store Paths
 VECTOR_STORE_PATH = "./vector_store"
 ASSET_PATH = "./assets"
 
 # Vector Store Configurations
-TOP_K = 3
+TOP_K = 5
