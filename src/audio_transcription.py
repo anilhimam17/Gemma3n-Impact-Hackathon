@@ -5,7 +5,7 @@ from pathlib import Path
 class AudioTranscription:
     """Class provides the API for Audio Transcription using Whisper."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.model = WhisperModel("base", device="auto", compute_type="int8")
 
     def transcribe(self, file_path: list):
@@ -20,7 +20,7 @@ class AudioTranscription:
         ]
         return transcript
     
-    def check_audio(self, files: list):
+    def check_audio(self, files: list) -> bool:
         for file in files:
             if Path(file).suffix == ".wav":
                 return True

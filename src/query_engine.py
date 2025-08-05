@@ -10,6 +10,7 @@ from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 from llama_index.core.vector_stores.types import VectorStoreQueryMode
+from llama_index.core.base.llms.types import ChatMessage
 
 # Ollama Specific Imports
 from llama_index.llms.ollama import Ollama
@@ -18,10 +19,9 @@ from llama_index.embeddings.ollama import OllamaEmbedding
 # Project Module Imports
 from src.config import settings
 from src.response_structures import (
-    UnifiedResponse, SimpleResponse, ResearchResponse, 
-    SummaryResponse, ResponseTypes
+    SimpleResponse, ResearchResponse, SummaryResponse, ResponseTypes
 )
-from src.structured_prompt import RAG_PROMPT_TEMPLATE, CONCEPT_DRIVEN_SUMMARY_PROMPT_TEMPLATE
+from src.structured_prompt import RAG_PROMPT_TEMPLATE
 
 # Miscellaneous Imports
 from pathlib import Path
@@ -62,7 +62,8 @@ class QueryEngine:
 
         # ChromaDB Client
         self.chroma_client = chromadb.PersistentClient(path=self.index_registry)
-        self.chroma_collection = self.chroma_client.get_or_create_collection("research_companion")
+        self.collection_name = self.file_path.stem.lower()
+        self.chroma_collection = self.chroma_client.get_or_create_collection(self.collection_name)
 
         # Chat Engine Parameters
         self.top_k = settings.top_k
@@ -77,7 +78,7 @@ class QueryEngine:
         )
         return len(result["ids"]) > 0
 
-    def construct_chat_engine(self):
+    def construct_chat_engine(self) -> None:
         """Loads, Transforms and Indexes the input file / reloads them if exits and provides a query engine object."""
 
         # Accessing the ChromaVectorStore and setting the storage
@@ -131,17 +132,11 @@ class QueryEngine:
         
         try:
             structured_llm = Settings.llm.as_structured_llm(query_response_type)
-
-            if response_type == ResponseTypes.SUMMARY:
-                chat_engine = ContextChatEngine.from_defaults(
-                    retriever=self.custom_retriever, llm=structured_llm,
-                    memory=self.memory_buffer, context_template=CONCEPT_DRIVEN_SUMMARY_PROMPT_TEMPLATE
-                )
-            else:
-                chat_engine = ContextChatEngine.from_defaults(
-                    retriever=self.custom_retriever, llm=structured_llm, 
-                    memory=self.memory_buffer, context_template=RAG_PROMPT_TEMPLATE
-                )
+            
+            chat_engine = ContextChatEngine.from_defaults(
+                retriever=self.custom_retriever, llm=structured_llm, 
+                memory=self.memory_buffer, context_template=RAG_PROMPT_TEMPLATE
+            )
             
             response_obj = chat_engine.chat(user_prompt)
             response_json = json.loads(str(response_obj))
@@ -149,12 +144,14 @@ class QueryEngine:
             return response_output.model_dump_json(indent=4)
         except Exception as e:
             print(f"Error during query: {e}")
-            error_response = UnifiedResponse(
-                response=SimpleResponse(
-                    answer="""Sorry, I have encountered an issue processing your request.
-                    This can happen sometimes when a document is loaded for the first time or 
-                    the first query on a new document.
-                    Could you please try asking the question again."""
-                )
+            error_response = SimpleResponse(
+                answer="""Sorry, I have encountered an issue processing your request.
+                This can happen sometimes when a document is loaded for the first time or 
+                the first query on a new document.
+                Could you please try asking the question again."""
             )
             return error_response.model_dump_json(indent=4)
+        
+    def retrieve_memory(self) -> list[ChatMessage]:
+        """Providing the necessary chat history for summary generation."""
+        return self.memory_buffer.get_all()

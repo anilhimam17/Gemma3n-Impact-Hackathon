@@ -3,6 +3,7 @@ from gradio.themes import Ocean
 from gradio_pdf import PDF
 
 from pathlib import Path
+from typing import AsyncGenerator, Any
 import tempfile
 import json
 
@@ -13,7 +14,7 @@ from src.audio_transcription import AudioTranscription
 
 class GradioInterface:
     """Implements the complete interface for a page in Gradio."""
-    def __init__(self):
+    def __init__(self) -> None:
 
         # Gradio Layout and Component Instance Variables
         self.block_params = {"title": "Research Companion", "fill_height": True, "fill_width": True, "theme": Ocean()}
@@ -100,7 +101,7 @@ class GradioInterface:
         demo.launch()
 
     # ==== Helper Functions ====
-    async def run_query(self, pdf_path: str, multimodal_chat: dict, history: list):
+    async def run_query(self, pdf_path: str, multimodal_chat: dict, history: list) -> AsyncGenerator[tuple[list, dict[str, str]], Any]:
         """Propagates the given query through the AI agent."""
         
         # If no multimodal_chat was sent
@@ -139,11 +140,22 @@ class GradioInterface:
         response_data = json.loads(str(response_json))
 
         if response_type == ResponseTypes.RESEARCH:
-            answer = response_data.get("answer", "Sorry no answer was found")
+            # Primary Answer
+            answer = response_data.get("answer", "Sorry, I couldn't generate an answer could you please try again.")
+
+            # Followup Questions
+            follow_up_questions = response_data.get("follow_up_questions", "Sorry no follow-up questions were found.")
+            follow_up_questions_md = ""
+            if follow_up_questions and isinstance(follow_up_questions, list):
+                follow_up_questions_md = "\n\n---\n**Follow-Up Chain of Thought**\n"
+                for question in follow_up_questions:
+                    follow_up_questions_md += f"- {question}\n"
+
+            # Citations
             citations = response_data.get("citations", [])
             citations_markdown = ""
             if citations:
-                citations_markdown = "\n\n---\n\n**Sources & Citations**\n\n"
+                citations_markdown = "\n\n---\n**Sources & Citations**\n"
                 for idx, citation in enumerate(citations):
                     source_text = citation.get('source_text', 'N/A').replace('\n', ' ')
                     citations_markdown += ( 
@@ -152,7 +164,7 @@ class GradioInterface:
                         f"*Simplified Explanation:*\n{citation.get('simplification', 'N/A')}\n\n" 
                     )
             
-            final_response = f"{answer}{citations_markdown}"
+            final_response = f"{answer}{follow_up_questions_md}{citations_markdown}\n"
             history[-1] = {"role": "assistant", "content": final_response}
 
         elif response_type == ResponseTypes.SIMPLE:
@@ -162,7 +174,7 @@ class GradioInterface:
         yield history, {"text": ""}
         return
     
-    async def generate_summary(self, history: list):
+    async def generate_summary(self, history: list) -> AsyncGenerator[list[dict[str, str]], Any]:
         """Generates a summary by running inference on the model for the entire chat."""
         
         # If the summary is being generated before chatting
@@ -196,7 +208,7 @@ class GradioInterface:
         yield history
         return
     
-    def output_summary_file(self):
+    def output_summary_file(self) -> str:
         """Utilises the generated summary and output a temporary file."""
 
         # Creating a temporary file

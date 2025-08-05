@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-from typing import Union
 from enum import Enum
 
 
@@ -23,6 +22,10 @@ class ResearchResponse(BaseModel):
         description="""The primary, comprehensive answer to the user's query.
         This text should be fully formatted in Markdown, including any equations using LaTeX syntax (eg. $ h=6.64 * 10 ^ {-34} $)."""
     )
+    follow_up_questions: list[str] = Field(
+        description="""A maximum of three follow-up questions that the user's query relates to
+        as chain of thought prompts."""
+    )
     citations: list[Citation] = Field(
         description="A list of all source citations from the document that were used to formulate the answer."
     )
@@ -43,14 +46,6 @@ class SimpleResponse(BaseModel):
     """Class implements the expected structured response for a Simple Query to the LLM."""
     answer: str = Field(
         description="""A simple descriptive answer to the user's query."""
-    )
-
-
-class UnifiedResponse(BaseModel):
-    """Class combines the response types provided by the agent to enable routing."""
-    response: Union[SimpleResponse, ResearchResponse, SummaryResponse] = Field(
-        description="""The response to the user's query, 
-        which can be a research answer, summary answer or a simple answer."""
     )
 
 
