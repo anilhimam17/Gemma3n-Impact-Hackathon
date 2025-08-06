@@ -109,6 +109,7 @@ The key ideas for the future are as follows:
 - `Extending the Multi-modal input suite with images`: To provide users with auxilary workflows where they can upload hand-written shorts of their learnings, understandings and diagramatic representations. The model could then tutor the user based using its knowledge pipeline.
 - `Personalised Character Vector`: Implementing a personalised character vector to tailor the interactions with AI assistant to individual users.
 - `Gemma 3n Fine-Tuning`: Creating a fine-tuned Gemma 3n model that excels in `Research Analysis`, `Graphs`, `Diagrams` and `Bibliography Generation`.
+- `Voice Output`: Completion of the Conversational Interface by applying prompting techniques to generate a concise summary of the result from the LLM for voice output.
 
 ## Contributing & License
 This project is under an Apache License.  
