@@ -29,7 +29,7 @@ Here is a link to the demonstration of the project.
 
 ## Technical Implementation
 Here is detailed write providing the technical implementation detials and specifications of the project.  
-[Writeup]()
+[Writeup](./assets/Research%20Companion.pdf)
 
 ## Setup & Installation
 
