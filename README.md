@@ -19,17 +19,17 @@ A `Multimodal`, `Conversational AI` research assistant powered by **Google's Gem
 - **Structured Ouput:** Pydantic
 - **User Interface:** Gradio
 
+## Project Demonstration
+
+Here is a link to the demonstration of the project.  
+[Demo](https://youtu.be/atAlguWR27c?si=Tk5sVy6qlXx-R7s-)
+
 ## Architecture Overview 
 ![Image of the System Architecture](./assets/SystemArch.png)
 
 ## Technical Implementation
 Here is detailed write providing the technical implementation detials and specifications of the project.  
 [Writeup]()
-
-## Project Demonstration
-
-Here is a link to the demonstration of the project.  
-[Demo]()
 
 ## Setup & Installation
 
