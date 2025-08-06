@@ -75,10 +75,9 @@ class GradioInterface:
 
                     # Columns for the buttons
                     with gr.Row():
-                        with gr.Column():
-                            submit_button = gr.Button(value="Submit")
-                        with gr.Column():
-                            summary_button = gr.Button(value="Generate Conversation Summary")
+                        submit_button = gr.Button(value="Submit")
+                    with gr.Row():
+                        summary_button = gr.Button(value="Generate Conversation Summary")
                     with gr.Row():
                         download_file = gr.File(label="Summary File", interactive=False)
 
